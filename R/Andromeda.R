@@ -19,8 +19,8 @@
 #' NULL Andromeda-package
 #' @importFrom methods slotNames
 #' @importFrom utils head
+#' @importFrom tidyselect all_of
 #' @import dplyr
-#' @useDynLib Andromeda, .registration = TRUE
 #' 
 "_PACKAGE"
 

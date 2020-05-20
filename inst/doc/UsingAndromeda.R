@@ -47,11 +47,22 @@ andr$fastCars <- andr$cars %>%
 ## ----eval=TRUE----------------------------------------------------------------
 names(andr)
 colnames(andr$cars)
-nrow(andr$cars)
-ncol(andr$cars %>% select(speed))
 
 ## ----eval=TRUE----------------------------------------------------------------
 RSQLite::dbGetQuery(andr, "SELECT * FROM cars LIMIT 5;")
+
+## ----eval=TRUE----------------------------------------------------------------
+myData <- data.frame(someTime = as.POSIXct(c("2000-01-01 10:00", 
+                                             "2001-01-31 11:00", 
+                                             "2004-12-31 12:00")),
+                     someDate = as.Date(c("2000-01-01", 
+                                          "2001-01-31", 
+                                          "2004-12-31")))
+andr$myData <- myData
+andr$myData %>% 
+  collect() %>%
+  mutate(someTime = restorePosixct(someTime),
+         someDate = restoreDate(someDate))
 
 ## ----eval=TRUE----------------------------------------------------------------
 doSomething <- function(batch, multiplier) {
@@ -96,4 +107,22 @@ writeLines("Disconnected Andromeda. This data object can no longer be used")
 
 ## ----eval=FALSE---------------------------------------------------------------
 #  andr <- loadAndromeda("c:/temp/andromeda.zip")
+
+## ----eval=FALSE---------------------------------------------------------------
+#  andr$cars %>%
+#    filter(speed > 10)
+
+## ----eval=FALSE---------------------------------------------------------------
+#  andr$cars %>%
+#    filter(.data$speed > 10)
+
+## ----eval=FALSE---------------------------------------------------------------
+#  speed <- 10
+#  andr$cars %>%
+#    filter(.data$speed == speed)
+
+## ----eval=FALSE---------------------------------------------------------------
+#  speed <- 10
+#  andr$cars %>%
+#    filter(.data$speed == !!speed)
 

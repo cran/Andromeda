@@ -120,13 +120,11 @@ This way the query result does not have to pass through memory, but instead is d
 
 ## Simple meta-data
 
-If we wish to know the tables that exist in an `Andromeda` object, we can call the generic `names` function. Similarly, we can call `colnames` to get the names of the columns in a table. We can call `nrow` and `ncol` to get the number of columns. Note that these functions also work on query results, but be warned that `nrow` and `ncol` require actually executing the query, so may be slow:
+If we wish to know the tables that exist in an `Andromeda` object, we can call the generic `names` function. Similarly, we can call `colnames` to get the names of the columns in a table:
 
 ```{r eval=TRUE}
 names(andr)
 colnames(andr$cars)
-nrow(andr$cars)
-ncol(andr$cars %>% select(speed))
 ```
 
 
@@ -139,6 +137,24 @@ RSQLite::dbGetQuery(andr, "SELECT * FROM cars LIMIT 5;")
 ```
 
 However, for consistency it is recommended to use the `dplyr` functions instead.
+
+## Dates and times
+
+One limitation of SQLite - the technology underlying Andromeda - is that it does not support date and time formats. Dates and times are automatically converted to numeric values when adding them to an Andromeda table. Converting them back needs to be done manually:
+
+```{r eval=TRUE}
+myData <- data.frame(someTime = as.POSIXct(c("2000-01-01 10:00", 
+                                             "2001-01-31 11:00", 
+                                             "2004-12-31 12:00")),
+                     someDate = as.Date(c("2000-01-01", 
+                                          "2001-01-31", 
+                                          "2004-12-31")))
+andr$myData <- myData
+andr$myData %>% 
+  collect() %>%
+  mutate(someTime = restorePosixct(someTime),
+         someDate = restoreDate(someDate))
+```
 
 # Batch operations
 
@@ -212,4 +228,47 @@ We can load the object again using:
 andr <- loadAndromeda("c:/temp/andromeda.zip")
 ```
 
+# Using Andromeda in your packages
+
+Andromeda is intended to be used inside of other packages. Here are some tips:
+
+## Import dplyr
+
+Make sure `dplyr` is imported in the NAMESPACE. That way all `dplyr` functions can be used on the Andromeda objects in your functions.
+
+## Import .data from rlang
+
+If we reference variables in our `dplyr` function calls we should precede them with `.data$` to avoid R check warnings about using an unknown variable. For example, instead of
+
+```{r eval=FALSE}
+andr$cars %>%
+  filter(speed > 10)
+```
+
+we should write
+
+```{r eval=FALSE}
+andr$cars %>%
+  filter(.data$speed > 10)
+```
+
+to avoid R check warnings about `speed` being an unknown variable.
+
+## Beware of variable name confusion
+
+`dplyr` sometimes confuses variable names, so we have to help. For example, this code:
+
+```{r eval=FALSE}
+speed <- 10
+andr$cars %>%
+  filter(.data$speed == speed)
+```
+
+will not actually filter anything, because the second `speed` variable in the filter statement is interpreted to refer to the `speed` field in the data, not the variable we defined earlier. One way to avoid this is by forcing early evaluation of the variable:
+
+```{r eval=FALSE}
+speed <- 10
+andr$cars %>%
+  filter(.data$speed == !!speed)
+```
 

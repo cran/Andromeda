@@ -44,10 +44,6 @@
 #' @name Andromeda-class
 #' @aliases Andromeda
 #' @seealso [`andromeda()`]
-NULL
-
-#' Andromeda class.
-#'
 #' @import RSQLite
 #' @export
 setClass("Andromeda", contains = "SQLiteConnection")
@@ -134,6 +130,7 @@ copyAndromeda <- function(andromeda) {
   andromeda <- RSQLite::dbConnect(RSQLite::SQLite(),
                                   tempfile(tmpdir = tempFolder, fileext = ".sqlite"))
   class(andromeda) <- "Andromeda"
+  attr(class(andromeda),"package") <- "Andromeda"
   finalizer <- function(ptr) {
     # Suppress R Check note:
     missing(ptr)
@@ -225,8 +222,12 @@ setMethod("[[<-", "Andromeda", function(x, i, value) {
     } else {
       doBatchedAppend <- function(batch) {
         RSQLite::dbWriteTable(conn = x, name = i, value = batch, overwrite = FALSE, append = TRUE)
+        return(TRUE)
       }
-      batchApply(value, doBatchedAppend)
+      dummy <- batchApply(value, doBatchedAppend)
+      if (length(dummy) == 0) {
+        RSQLite::dbWriteTable(conn = x, name = i, value = dplyr::collect(value), overwrite = FALSE, append = TRUE)
+      }
     }
   } else {
     stop("Table must be a data frame or dplyr table")
@@ -296,7 +297,7 @@ setMethod("length", "Andromeda", function(x) {
 #' A logical value.
 #'
 #' @export
-isAndomeda <- function(x) {
+isAndromeda <- function(x) {
   return(inherits(x, "Andromeda"))
 }
 

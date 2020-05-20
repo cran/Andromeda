@@ -1,3 +1,27 @@
+Andromeda 0.2.0
+===============
+
+Changes
+
+- Dropping nrow and ncol support, as this seems to cause instability and is not consistent with dplyr.
+
+- Dropping isSorted function, as database queries are only guaranteed to stay sorted if explicitly required to (using 'arrange').
+
+- Added restoreDate and restorePosixct functions.
+
+Bug fixes
+
+- Fixed typo in isAndromeda function name.
+
+- Fixed incompatibility issue with dplyr 1.0.0 causing 'method not supported' error.
+
+- Correctly handling differences in column order when appending.
+
+- Fixed copying of zero-row tables from one Andromeda to another.
+
+- Fixed issue where Andromeda object inheritance was lost on R restart.
+
+
 Andromeda 0.1.3
 ===============
 

@@ -163,9 +163,13 @@ groupApply <- function(tbl, groupVariable, fun, ..., batchSize = 100000, safe = 
 #'
 #' @description
 #' Append a data frame, Andromeda table, or result of a query on an [`Andromeda`] table to an existing
-#' [`Andromeda`] table.
+#' [`Andromeda`] table. 
+#' 
 #' If data from another [`Andromeda`] is appended, a batch-wise copy process is used, which will be slower
 #' than when appending data from within the same [`Andromeda`] object.
+#' 
+#' **Important**: columns are appended based on column name, not on column order. The column names should
+#' therefore be identical (but not necessarily in the same order).
 #' 
 #' @return 
 #' Returns no value. Executed for the side-effect of appending the data to the table.
@@ -193,7 +197,7 @@ appendToTable <- function(tbl, data) {
     stop("First argument must be a base table (cannot be a query result)")
 
   connection <- dbplyr::remote_con(tbl)
-  tableName <- dbplyr::remote_name(tbl)
+  tableName <- as.character(dbplyr::remote_name(tbl))
   if (inherits(data, "data.frame")) {
 
     RSQLite::dbWriteTable(conn = connection,
@@ -203,7 +207,7 @@ appendToTable <- function(tbl, data) {
                           append = TRUE)
   } else if (inherits(data, "tbl_dbi")) {
     if (isTRUE(all.equal(connection, dbplyr::remote_con(data)))) {
-      sql <- dbplyr::sql_render(data, connection)
+      sql <- dbplyr::sql_render(select(data, all_of(colnames(tbl))), connection)
       sql <- sprintf("INSERT INTO %s %s", tableName, sql)
       RSQLite::dbExecute(connection, sql)
     } else {
@@ -220,12 +224,6 @@ appendToTable <- function(tbl, data) {
   invisible(NULL)
 }
 
-#' @export
-dim.tbl_dbi <- function(x) {
-  if (!inherits(x, "tbl_dbi"))
-    stop("Argument must be an Andromeda table")
-  return(c((x %>% dplyr::count() %>% dplyr::collect())$n, length(dbplyr::op_vars(x))))
-}
 
 #' Apply a boolean test to batches of data in an Andromeda table and terminate early
 #'
@@ -276,4 +274,68 @@ batchTest <- function(tbl, fun, ..., batchSize = 100000) {
     DBI::dbClearResult(result)
   })
   return(output)
+}
+
+#' Restore dates
+#' 
+#' @description 
+#' Restores dates that were converted by Andromeda to numeric values back to dates.
+#'
+#' @param x  A numeric vector representing dates.
+#'
+#' @return
+#' A vector of type `Date`.
+#' 
+#' @examples
+#' myData <- data.frame(startDate = as.Date(c("2000-01-01", "2001-01-31", "2004-12-31")))
+#' andr <- andromeda(myData = myData)
+#' 
+#' andr$myData %>% 
+#'   collect() %>%
+#'   mutate(startDate = restoreDate(startDate))
+#' # # A tibble: 3 x 1
+#' # startDate 
+#' # <date>    
+#' # 1 2000-01-01
+#' # 2 2001-01-31
+#' # 3 2004-12-31
+#' 
+#' close(andr)
+#' 
+#' @export
+restoreDate <- function(x) { 
+  return(as.Date(x, origin = "1970-01-01"))
+}
+
+#' Restore timestamps
+#' 
+#' @description 
+#' Restores dates that were converted by Andromeda to numeric values back to dates.
+#'
+#' @param x  A numeric vector representing timestamps
+#'
+#' @return
+#' A vector of type `POSIXct`.
+#' 
+#' @examples
+#' myData <- data.frame(startTime = as.POSIXct(c("2000-01-01 10:00", 
+#'                                               "2001-01-31 11:00", 
+#'                                               "2004-12-31 12:00")))
+#' andr <- andromeda(myData = myData)
+#' 
+#' andr$myData %>% 
+#'   collect() %>%
+#'   mutate(startTime = restorePosixct(startTime))
+#' # # A tibble: 3 x 1
+#' # startTime          
+#' # <dttm>             
+#' # 1 2000-01-01 10:00:00
+#' # 2 2001-01-31 11:00:00
+#' # 3 2004-12-31 12:00:00
+#' 
+#' close(andr)
+#' 
+#' @export
+restorePosixct <- function(x) { 
+  return(as.POSIXct(x, origin = "1970-01-01"))
 }

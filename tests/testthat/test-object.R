@@ -55,6 +55,16 @@ test_that("Tables from tables", {
   close(andromeda2)
 })
 
+test_that("Table from same table in same Andromeda", {
+  andromeda <- andromeda()
+  andromeda$cars <- cars
+  andromeda$cars <- andromeda$cars %>% filter(speed > 10)
+  
+  cars2 <- andromeda$cars %>% collect()
+  expect_equivalent(cars2, cars %>% filter(speed > 10))
+  
+  close(andromeda)
+})
 
 test_that("Dropping tables", {
   andromeda <- andromeda()
@@ -134,4 +144,18 @@ test_that("Copying andromeda", {
   expect_false(andromeda@dbname == andromeda2@dbname)
   close(andromeda)
   close(andromeda2)
+})
+
+test_that("Warning when disk space low", {
+  skip_if(.Platform$OS.type != "windows")
+  
+  availableSpace <- tryCatch(getAndromedaTempDiskSpace(), 
+                             error = function(e) NA)
+  skip_if(is.na(availableSpace))
+
+  andromeda <- andromeda()
+  options(warnDiskSpaceThreshold = Inf)
+  expect_warning(andromeda$cars <- cars)
+  close(andromeda)
+  options(warnDiskSpaceThreshold = NULL)
 })

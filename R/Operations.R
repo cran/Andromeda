@@ -16,12 +16,13 @@
 
 #' Apply a function to batches of data in an Andromeda table
 #'
-#' @param tbl         An [`Andromeda`] table (or any other 'DBI' table).
-#' @param fun         A function where the first argument is a data frame.
-#' @param ...         Additional parameters passed to fun.
-#' @param batchSize   Number of rows to fetch at a time.
-#' @param safe        Create a copy of tbl first? Allows writing to the same Andromeda as being read
-#'                    from.
+#' @param tbl             An [`Andromeda`] table (or any other 'DBI' table).
+#' @param fun             A function where the first argument is a data frame.
+#' @param ...             Additional parameters passed to fun.
+#' @param batchSize       Number of rows to fetch at a time.
+#' @param progressBar     Show a progress bar?
+#' @param safe            Create a copy of tbl first? Allows writing to the same Andromeda as being 
+#'                        read from.
 #'
 #' @details
 #' This function is similar to the [`lapply()`] function, in that it applies a function to sets of
@@ -51,12 +52,12 @@
 #' close(andr)
 #'
 #' @export
-batchApply <- function(tbl, fun, ..., batchSize = 100000, safe = FALSE) {
+batchApply <- function(tbl, fun, ..., batchSize = 100000, progressBar = FALSE, safe = FALSE) {
   if (!inherits(tbl, "tbl_dbi"))
     stop("First argument must be an Andromeda (or DBI) table")
   if (!is.function(fun))
     stop("Second argument must be a function")
-
+  
   if (safe) {
     tempAndromeda <- andromeda()
     on.exit(close(tempAndromeda))
@@ -67,15 +68,28 @@ batchApply <- function(tbl, fun, ..., batchSize = 100000, safe = FALSE) {
     connection <- dbplyr::remote_con(tbl)
     sql <- dbplyr::sql_render(tbl, connection)
   }
-  result <- DBI::dbSendQuery(connection, sql)
+  
   output <- list()
+  if (progressBar) {
+    pb <- txtProgressBar(style = 3)
+    totalRows <- tbl %>% count() %>% pull()
+    completedRows <- 0
+  }
+  result <- DBI::dbSendQuery(connection, sql)
   tryCatch({
     while (!DBI::dbHasCompleted(result)) {
       batch <- DBI::dbFetch(result, n = batchSize)
       output[[length(output) + 1]] <- do.call(fun, append(list(batch), list(...)))
+      if (progressBar) {
+        completedRows <- completedRows + nrow(batch)
+        setTxtProgressBar(pb, completedRows/totalRows)
+      }
     }
   }, finally = {
     DBI::dbClearResult(result)
+    if (progressBar) {
+      close(pb)
+    }
   })
   invisible(output)
 }
@@ -89,6 +103,7 @@ batchApply <- function(tbl, fun, ..., batchSize = 100000, safe = FALSE) {
 #' @param batchSize       Number of rows fetched from the table at a time. This is not the number of
 #'                        rows to which the function will be applied. Included mostly for testing
 #'                        purposes.
+#' @param progressBar     Show a progress bar?
 #' @param safe            Create a copy of `tbl` first? Allows writing to the same Andromeda as being
 #'                        read from.
 #'
@@ -121,10 +136,10 @@ batchApply <- function(tbl, fun, ..., batchSize = 100000, safe = FALSE) {
 #' close(andr)
 #'
 #' @export
-groupApply <- function(tbl, groupVariable, fun, ..., batchSize = 100000, safe = FALSE) {
+groupApply <- function(tbl, groupVariable, fun, ..., batchSize = 100000, progressBar = FALSE, safe = FALSE) {
   if (!groupVariable %in% colnames(tbl))
     stop(groupVariable, " is not a variable in the table")
-
+  
   env <- new.env()
   assign("output", list(), envir = env)
   wrapper <- function(data, userFun, groupVariable, env, ...) {
@@ -146,6 +161,7 @@ groupApply <- function(tbl, groupVariable, fun, ..., batchSize = 100000, safe = 
              groupVariable = groupVariable,
              ...,
              batchSize = batchSize,
+             progressBar = progressBar,
              safe = safe)
   output <- env$output
   if (!is.null(env$groupData)) {
@@ -195,11 +211,12 @@ appendToTable <- function(tbl, data) {
     stop("First argument must be an Andromeda table")
   if (!inherits(tbl$ops, "op_base_remote"))
     stop("First argument must be a base table (cannot be a query result)")
-
+  
   connection <- dbplyr::remote_con(tbl)
+  .checkAvailableSpace(connection)
   tableName <- as.character(dbplyr::remote_name(tbl))
   if (inherits(data, "data.frame")) {
-
+    
     RSQLite::dbWriteTable(conn = connection,
                           name = tableName,
                           value = data,

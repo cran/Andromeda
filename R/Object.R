@@ -120,6 +120,7 @@ andromeda <- function(...) {
 #'
 #' @export
 copyAndromeda <- function(andromeda) {
+  checkIfValid(andromeda)
   newAndromeda <- .createAndromeda()
   RSQLite::sqliteCopyDatabase(andromeda, newAndromeda)
   return(newAndromeda)
@@ -205,21 +206,35 @@ setMethod("$<-", "Andromeda", function(x, name, value) {
 #' @rdname
 #' Andromeda-class
 setMethod("[[<-", "Andromeda", function(x, i, value) {
+  checkIfValid(x)
   if (is.null(value)) {
     if (i %in% names(x)) {
       RSQLite::dbRemoveTable(x, i)
     }
   } else if (inherits(value, "data.frame")) {
+    .checkAvailableSpace(x)
     RSQLite::dbWriteTable(conn = x, name = i, value = value, overwrite = TRUE, append = FALSE)
   } else if (inherits(value, "tbl_dbi")) {
-    if (RSQLite::dbExistsTable(x, i)) {
-      RSQLite::dbRemoveTable(x, i)
-    }
+    .checkAvailableSpace(x)
     if (isTRUE(all.equal(x, dbplyr::remote_con(value)))) {
       sql <- dbplyr::sql_render(value, x)
-      sql <- sprintf("CREATE TABLE %s AS %s", i, sql)
-      RSQLite::dbExecute(x, sql)
+      if (RSQLite::dbExistsTable(x, i)) {
+        # Maybe we're copying data from a table into the same table. So write to temp
+        # table first, then drop old table, and rename temp to old name:
+        tempName <- paste(sample(letters, 16), collapse = "")
+        sql <- sprintf("CREATE TABLE %s AS %s", tempName, sql)
+        RSQLite::dbExecute(x, sql)
+        RSQLite::dbRemoveTable(x, i)
+        sql <- sprintf("ALTER TABLE %s RENAME TO %s;", tempName, i)
+        RSQLite::dbExecute(x, sql)
+      } else {
+        sql <- sprintf("CREATE TABLE %s AS %s", i, sql)
+        RSQLite::dbExecute(x, sql)
+      }
     } else {
+      if (RSQLite::dbExistsTable(x, i)) {
+        RSQLite::dbRemoveTable(x, i)
+      }
       doBatchedAppend <- function(batch) {
         RSQLite::dbWriteTable(conn = x, name = i, value = batch, overwrite = FALSE, append = TRUE)
         return(TRUE)
@@ -241,6 +256,7 @@ setMethod("[[<-", "Andromeda", function(x, i, value) {
 #' @rdname
 #' Andromeda-class
 setMethod("[[", "Andromeda", function(x, i) {
+  checkIfValid(x)
   if (RSQLite::dbExistsTable(x, i)) {
     return(dplyr::tbl(x, i))
   } else {
@@ -341,3 +357,8 @@ setMethod("close", "Andromeda", function(con, ...) {
     unlink(fileName)
   }
 })
+
+checkIfValid <- function(x) {
+  if (!isValidAndromeda(x))
+    stop("Andromeda object is no longer valid. Perhaps it was saved without maintainConnection = TRUE, or R has been restarted?", call. = FALSE)
+}

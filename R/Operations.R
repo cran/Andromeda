@@ -29,6 +29,8 @@
 #' data. In this case, the data is batches of data from an [`Andromeda`] table. Each batch will be
 #' presented to the function as a data frame.
 #' 
+#' @seealso [groupApply()]
+#' 
 #' @return 
 #' Invisibly returns a list of objects, where each object is the output of the user-supplied function
 #' applied to a batch
@@ -54,9 +56,9 @@
 #' @export
 batchApply <- function(tbl, fun, ..., batchSize = 100000, progressBar = FALSE, safe = FALSE) {
   if (!inherits(tbl, "tbl_dbi"))
-    stop("First argument must be an Andromeda (or DBI) table")
+    abort("First argument must be an Andromeda (or DBI) table")
   if (!is.function(fun))
-    stop("Second argument must be a function")
+    abort("Second argument must be a function")
   
   if (safe) {
     tempAndromeda <- andromeda()
@@ -111,6 +113,8 @@ batchApply <- function(tbl, fun, ..., batchSize = 100000, progressBar = FALSE, s
 #' This function applies a function to groups of data. The groups are identified by unique values of
 #' the `groupVariable`, which must be a variable in the table.
 #'
+#' @seealso [batchApply()]
+#'
 #' @return
 #' Invisibly returns a list of objects, where each object is the output of the user-supplied function
 #' applied to a group.
@@ -138,7 +142,7 @@ batchApply <- function(tbl, fun, ..., batchSize = 100000, progressBar = FALSE, s
 #' @export
 groupApply <- function(tbl, groupVariable, fun, ..., batchSize = 100000, progressBar = FALSE, safe = FALSE) {
   if (!groupVariable %in% colnames(tbl))
-    stop(groupVariable, " is not a variable in the table")
+    abort(sprintf("'%s' is not a variable in the table", groupVariable))
   
   env <- new.env()
   assign("output", list(), envir = env)
@@ -208,9 +212,9 @@ groupApply <- function(tbl, groupVariable, fun, ..., batchSize = 100000, progres
 #' @export
 appendToTable <- function(tbl, data) {
   if (!inherits(tbl, "tbl_dbi"))
-    stop("First argument must be an Andromeda table")
+    abort("First argument must be an Andromeda table")
   if (!inherits(tbl$ops, "op_base_remote"))
-    stop("First argument must be a base table (cannot be a query result)")
+    abort("First argument must be a base table (cannot be a query result)")
   
   connection <- dbplyr::remote_con(tbl)
   .checkAvailableSpace(connection)
@@ -273,9 +277,9 @@ appendToTable <- function(tbl, data) {
 #' @export
 batchTest <- function(tbl, fun, ..., batchSize = 100000) {
   if (!inherits(tbl, "tbl_dbi"))
-    stop("First argument must be an Andromeda (or DBI) table")
+    abort("First argument must be an Andromeda (or DBI) table")
   if (!is.function(fun))
-    stop("Second argument must be a function")
+    abort("Second argument must be a function")
   
   connection <- dbplyr::remote_con(tbl)
   sql <- dbplyr::sql_render(tbl, connection)
@@ -299,6 +303,8 @@ batchTest <- function(tbl, fun, ..., batchSize = 100000) {
 #' Restores dates that were converted by Andromeda to numeric values back to dates.
 #'
 #' @param x  A numeric vector representing dates.
+#' 
+#' @seealso [restorePosixct()]
 #'
 #' @return
 #' A vector of type `Date`.
@@ -330,6 +336,8 @@ restoreDate <- function(x) {
 #' Restores dates that were converted by Andromeda to numeric values back to dates.
 #'
 #' @param x  A numeric vector representing timestamps
+#' 
+#' @seealso [restoreDate()]
 #'
 #' @return
 #' A vector of type `POSIXct`.

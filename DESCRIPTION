@@ -1,8 +1,8 @@
 Package: Andromeda
 Type: Package
 Title: Asynchronous Disk-Based Representation of Massive Data
-Version: 0.3.2
-Date: 2020-07-16
+Version: 0.4.0
+Date: 2020-10-30
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
   person("Marc A.", "Suchard", , "msuchard@ucla.edu", role = c("aut")),
@@ -16,15 +16,16 @@ URL: https://ohdsi.github.io/Andromeda/,
         https://github.com/OHDSI/Andromeda
 BugReports: https://github.com/OHDSI/Andromeda/issues
 Depends: dplyr
-Imports: RSQLite, DBI, zip, methods, dbplyr, tidyselect, cli, pillar
-Suggests: testthat, knitr, rmarkdown, rlang, tibble, rJava
+Imports: RSQLite, DBI, zip, methods, dbplyr, tidyselect, cli, rlang,
+        pillar
+Suggests: testthat, stringr, knitr, rmarkdown, tibble, rJava
 LazyData: false
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Encoding: UTF-8
 NeedsCompilation: no
-Packaged: 2020-07-16 15:57:54 UTC; MSCHUEMI
+Packaged: 2020-10-30 10:32:52 UTC; MSCHUEMI
 Author: Martijn Schuemie [aut, cre],
   Marc A. Suchard [aut],
   Observational Health Data Science and Informatics [cph]
 Repository: CRAN
-Date/Publication: 2020-07-16 16:30:03 UTC
+Date/Publication: 2020-10-30 11:00:02 UTC

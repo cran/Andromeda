@@ -6,7 +6,7 @@ Andromeda
 [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/Andromeda)](https://cran.r-project.org/package=Andromeda)
 [![CRAN_Status_Badge](http://cranlogs.r-pkg.org/badges/Andromeda)](https://cran.r-project.org/package=Andromeda)
 
-Andromeda is part of [HADES](https://ohdsi.github.io/Hades).
+Andromeda is part of [HADES](https://ohdsi.github.io/Hades/).
 
 Introduction
 ============
@@ -58,7 +58,7 @@ devtools::install_github("ohdsi/Andromeda")
 
 User Documentation
 ==================
-Documentation can be found on the [package website](https://ohdsi.github.io/Andromeda).
+Documentation can be found on the [package website](https://ohdsi.github.io/Andromeda/).
 
 PDF versions of the documentation are also available:
 * Vignette: [Using Andromeda](https://raw.githubusercontent.com/OHDSI/Andromeda/master/inst/doc/UsingAndromeda.pdf)

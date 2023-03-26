@@ -451,3 +451,25 @@ checkIfValid <- function(x) {
   if (!isValidAndromeda(x))
     abort("Andromeda object is no longer valid. Perhaps it was saved without maintainConnection = TRUE, or R has been restarted?")
 }
+
+#' Is the object an Andromeda table?
+#'
+#' @param tbl A reference to an Andromeda table
+#'
+#' @return TRUE or FALSE
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' andr <- andromeda(cars = cars)
+#' isAndromedaTable(andr$cars)
+#' close(andr)
+#' }
+isAndromedaTable <- function(tbl) {
+  return(
+    inherits(tbl, "FileSystemDataset") ||
+    inherits(tbl, "arrow_dplyr_query") ||
+    inherits(tbl, "tbl_Andromeda") ||
+    inherits(tbl, "tbl_SQLiteConnection")
+  )
+}

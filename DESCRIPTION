@@ -1,16 +1,16 @@
 Package: Andromeda
 Type: Package
 Title: Asynchronous Disk-Based Representation of Massive Data
-Version: 0.6.4
-Date: 2023-11-24
+Version: 0.6.5
+Date: 2024-01-19
 Authors@R: c(
-  person("Adam", "Black", , "black@ohdsi.org", role = c("aut", "cre")),
+  person("Adam", "Black", , "black@ohdsi.org", role = c("aut")),
   person("Egill", "Fridgeirsson", , "e.fridgeirsson@erasmusmc.nl", role = c("aut")),
-  person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut")),
+  person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre")),
   person("Marc A.", "Suchard", , "msuchard@ucla.edu", role = c("aut")),
   person("Observational Health Data Science and Informatics", role = c("cph"))
   )
-Maintainer: Adam Black <black@ohdsi.org>
+Maintainer: Martijn Schuemie <schuemie@ohdsi.org>
 Description: Storing very large data objects on a local drive, while still making it possible to manipulate the data in an efficient manner.
 License: Apache License 2.0
 VignetteBuilder: knitr
@@ -24,11 +24,11 @@ Suggests: testthat, stringr, knitr, rmarkdown, tibble, rJava,
 RoxygenNote: 7.2.3
 Encoding: UTF-8
 NeedsCompilation: no
-Packaged: 2023-11-24 10:36:22 UTC; adamblack
-Author: Adam Black [aut, cre],
+Packaged: 2024-01-19 11:29:52 UTC; schuemie
+Author: Adam Black [aut],
   Egill Fridgeirsson [aut],
-  Martijn Schuemie [aut],
+  Martijn Schuemie [aut, cre],
   Marc A. Suchard [aut],
   Observational Health Data Science and Informatics [cph]
 Repository: CRAN
-Date/Publication: 2023-11-24 11:00:02 UTC
+Date/Publication: 2024-01-22 15:32:47 UTC

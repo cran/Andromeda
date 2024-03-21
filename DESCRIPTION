@@ -1,8 +1,8 @@
 Package: Andromeda
 Type: Package
 Title: Asynchronous Disk-Based Representation of Massive Data
-Version: 0.6.5
-Date: 2024-01-19
+Version: 0.6.6
+Date: 2024-03-21
 Authors@R: c(
   person("Adam", "Black", , "black@ohdsi.org", role = c("aut")),
   person("Egill", "Fridgeirsson", , "e.fridgeirsson@erasmusmc.nl", role = c("aut")),
@@ -24,11 +24,11 @@ Suggests: testthat, stringr, knitr, rmarkdown, tibble, rJava,
 RoxygenNote: 7.2.3
 Encoding: UTF-8
 NeedsCompilation: no
-Packaged: 2024-01-19 11:29:52 UTC; schuemie
+Packaged: 2024-03-21 10:32:29 UTC; schuemie
 Author: Adam Black [aut],
   Egill Fridgeirsson [aut],
   Martijn Schuemie [aut, cre],
   Marc A. Suchard [aut],
   Observational Health Data Science and Informatics [cph]
 Repository: CRAN
-Date/Publication: 2024-01-22 15:32:47 UTC
+Date/Publication: 2024-03-21 11:30:06 UTC

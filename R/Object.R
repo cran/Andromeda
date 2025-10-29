@@ -190,6 +190,9 @@ copyAndromeda <- function(andromeda, options = list()) {
   }
   reg.finalizer(andromeda@conn_ref, finalizer, onexit = TRUE)
   
+  duckDbTempDirectory <- paste(dbdir, "temp", sep = ".")
+  DBI::dbExecute(andromeda, sprintf("PRAGMA temp_directory = '%s'", duckDbTempDirectory))
+  
   # ignore all options except 'threads' for now
   if (is.numeric(options[["threads"]])) {
     DBI::dbExecute(andromeda, paste("PRAGMA threads = ", as.integer(options[["threads"]])))
@@ -200,9 +203,11 @@ copyAndromeda <- function(andromeda, options = list()) {
     }
   }
   memoryLimit <- getOption("andromedaMemoryLimit")
-  if (!is.null(memoryLimit)) {
-    DBI::dbExecute(andromeda, sprintf("SET memory_limit = '%0.4fGB';", memoryLimit))
+  if (is.null(memoryLimit)) {
+    # Default limit is 80%, which could cause problems when there are multiple Andromeda instances:
+    memoryLimit <- .getPhysicalMemory() * 0.2
   }
+  DBI::dbExecute(andromeda, sprintf("SET memory_limit = '%0.4fGB';", memoryLimit))
   DBI::dbExecute(andromeda, "PRAGMA enable_progress_bar = false;")
   return(andromeda)
 }
@@ -283,7 +288,7 @@ setMethod("[[<-", "Andromeda", function(x, i, value) {
   } else if (inherits(value, "tbl_dbi")) {
     .checkAvailableSpace(x)
     # Call flush (checkpoint) to avoid segfault:
-    Andromeda::flushAndromeda(dbplyr::remote_con(value))
+    Andromeda::flushAndromeda(dbplyr::remote_con(value), evictCache = FALSE)
     if (identical(x, dbplyr::remote_con(value))) {
       # x[[i]] and value are tables are in the same Andromeda object
       sql <- dbplyr::sql_render(value, x)
@@ -338,7 +343,13 @@ setMethod("[[<-", "Andromeda", function(x, i, value) {
           ))
           DBI::dbExecute(x, "DETACH source")
       }
+      # Could have lots of data in buffers. We don't want to hog the memory, so free up in source
+      # Andromeda:
+      Andromeda::flushAndromeda(dbplyr::remote_con(value), evictCache = TRUE)
     }
+    # Could have lots of data in buffers. We don't want to hog the memory, so free up in target
+    # Andromeda:
+    Andromeda::flushAndromeda(x, evictCache = TRUE)
   } else {
     abort("Table must be a data frame or dplyr table")
   }
@@ -382,8 +393,11 @@ setMethod("[[", "Andromeda", function(x, i) {
 #' 
 #' @export
 setMethod("names", "Andromeda", function(x) {
-  checkIfValid(x)
-  DBI::dbListTables(x)
+  if (isValidAndromeda(x)) {
+    DBI::dbListTables(x)
+  } else {
+    return(as.character(c()))
+  }
 })
 
 #' Set table names in an Andromeda object
@@ -562,4 +576,10 @@ checkIfValid <- function(x) {
 #' @export
 isAndromedaTable <- function(tbl) {
   return(inherits(tbl, "tbl_dbi") && inherits(dbplyr::remote_con(tbl), "Andromeda"))
+}
+
+.getPhysicalMemory <- function() {
+  memory <- memuse::Sys.meminfo()$totalram
+  memory <- memuse::swap.unit(memory, "GB")
+  return(memory@size)
 }
